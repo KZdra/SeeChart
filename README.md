@@ -77,6 +77,20 @@ Aplikasi web interaktif Single-Page (SPA) berbasis **HTML5**, **CSS3**, dan **Va
 - **Stage Metronome**: Ketukan tempo visual & audio (menggunakan Web Audio API) lengkap dengan fitur *Tap Tempo*.
 - **Mode Cetak / PDF**: Tampilan cetak hitam-putih bersih untuk lembar fisik cadangan.
 
+### 10. Desain Responsif & UX Khusus Panggung (Mobile, Tablet & Stand Holder)
+- **Screen Wake Lock API (Anti-Sleep)**: Fitur esensial bagi musisi di panggung agar layar smartphone/tablet tidak padam atau redup di tengah-tengah lagu. Dilengkapi indikator lampu hijau panggung.
+- **Mobile Stage Controller Dock**: Bilah kontrol khusus di bagian bawah layar smartphone dengan tombol sentuh berukuran besar (mudah dijangkau ibu jari saat ponsel terpasang di mic stand holder):
+  - Tombol cepat buka Setlist
+  - Navigasi lagu (*Prev / Next*)
+  - Tombol utama Play / Pause auto-scroll yang menonjol
+  - Quick Transpose (*b / Key / #*)
+- **Gesture Sentuh (Touch Swipe & Double-Tap)**:
+  - *Swipe Kiri*: Pindah ke lagu berikutnya dalam setlist layaknya membalik lembar partitur.
+  - *Swipe Kanan*: Pindah ke lagu sebelumnya.
+  - *Double-Tap di Lembar*: Play / Pause auto-scroll instan tanpa harus mencari tombol.
+- **Auto-Responsive 2-Column Mode**: Mode 2 kolom otomatis beralih rapi menjadi 1 kolom pada layar di bawah 850px agar spasi monospace chord tetap presisi dan tidak terdistorsi.
+- **Large Touch Targets**: Area sentuh tombol dan chord diperbesar (minimal 44-48px) dengan `touch-action: manipulation` untuk respon sentuh instan tanpa jeda 300ms dari browser mobile.
+
 ---
 
 ## ⌨️ Daftar Tombol Pintas Keyboard (Stage Keybindings)

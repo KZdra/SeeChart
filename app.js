@@ -952,11 +952,21 @@ Bm`
     stageCueText: document.getElementById('stage-cue-text'),
     btnEditInlineCue: document.getElementById('btn-edit-inline-cue'),
 
-    // Nav Floater
+    // Screen Wake Lock
+    btnWakeLock: document.getElementById('btn-wake-lock'),
+
+    // Nav Floater & Mobile Stage Dock
+    stageNavFloater: document.getElementById('stage-nav-floater'),
+    btnMobileSidebarToggle: document.getElementById('btn-mobile-sidebar-toggle'),
     btnPrevSong: document.getElementById('btn-prev-song'),
     btnNextSong: document.getElementById('btn-next-song'),
     btnQuickScrollPause: document.getElementById('btn-quick-scroll-pause'),
     quickScrollText: document.getElementById('quick-scroll-text'),
+    mobileIconScrollPlay: document.getElementById('mobile-icon-scroll-play'),
+    mobileIconScrollPause: document.getElementById('mobile-icon-scroll-pause'),
+    btnMobileTransDown: document.getElementById('btn-mobile-trans-down'),
+    btnMobileTransUp: document.getElementById('btn-mobile-trans-up'),
+    mobileKeyPill: document.getElementById('mobile-key-pill'),
 
     // Metronome
     btnMetronomeToggle: document.getElementById('btn-metronome-toggle'),
@@ -1294,6 +1304,7 @@ Bm`
     DOM.stageKeyPill.textContent = `Kunci: ${currentKey}`;
     DOM.keyIndicator.textContent = currentKey;
     DOM.hudKeyBadge.textContent = currentKey;
+    if (DOM.mobileKeyPill) DOM.mobileKeyPill.textContent = currentKey;
 
     // Transpose Value Indicator
     const prefix = AppState.transposeOffset > 0 ? `+${AppState.transposeOffset}` : `${AppState.transposeOffset}`;
@@ -1517,6 +1528,11 @@ Bm`
 
     DOM.quickScrollText.textContent = 'JEDA';
     DOM.hudScrollIcon.innerHTML = '<rect x="6" y="4" width="4" height="16" fill="currentColor"/><rect x="14" y="4" width="4" height="16" fill="currentColor"/>';
+    if (DOM.mobileIconScrollPlay) DOM.mobileIconScrollPlay.classList.add('d-none');
+    if (DOM.mobileIconScrollPause) DOM.mobileIconScrollPause.classList.remove('d-none');
+
+    // Automatically ensure stage screen does not sleep while playing
+    requestWakeLock();
 
     AppState.scrollRafId = requestAnimationFrame(autoScrollLoop);
     showToast(`Auto-Scroll Aktif (${AppState.autoScrollSpeed}x)`);
@@ -1534,6 +1550,8 @@ Bm`
 
     DOM.quickScrollText.textContent = 'SCROLL';
     DOM.hudScrollIcon.innerHTML = '<polygon points="6,4 20,12 6,20" fill="currentColor"/>';
+    if (DOM.mobileIconScrollPlay) DOM.mobileIconScrollPlay.classList.remove('d-none');
+    if (DOM.mobileIconScrollPause) DOM.mobileIconScrollPause.classList.add('d-none');
     showToast('Auto-Scroll Dijeda');
   }
 
@@ -2618,10 +2636,144 @@ Bm`
 
 
   /* ==========================================================================
+     19.5 SCREEN WAKE LOCK (STAGE ANTI-SLEEP) & TOUCH GESTURES
+     ========================================================================== */
+
+  let wakeLockSentinel = null;
+  let isWakeLockRequested = true;
+
+  async function requestWakeLock() {
+    if ('wakeLock' in navigator) {
+      try {
+        wakeLockSentinel = await navigator.wakeLock.request('screen');
+        wakeLockSentinel.addEventListener('release', () => {
+          updateWakeLockUI(false);
+        });
+        updateWakeLockUI(true);
+      } catch (err) {
+        updateWakeLockUI(false);
+      }
+    } else {
+      updateWakeLockUI(false);
+    }
+  }
+
+  async function releaseWakeLock() {
+    if (wakeLockSentinel) {
+      try {
+        await wakeLockSentinel.release();
+      } catch (e) {}
+      wakeLockSentinel = null;
+    }
+    updateWakeLockUI(false);
+  }
+
+  function updateWakeLockUI(isActive) {
+    if (!DOM.btnWakeLock) return;
+    if (isActive) {
+      DOM.btnWakeLock.classList.remove('off');
+      DOM.btnWakeLock.title = 'Layar Panggung: Tetap Menyala (Anti-Sleep ON)';
+    } else {
+      DOM.btnWakeLock.classList.add('off');
+      DOM.btnWakeLock.title = 'Layar Panggung: Normal (Klik untuk Anti-Sleep)';
+    }
+  }
+
+  async function toggleWakeLock() {
+    if (wakeLockSentinel) {
+      isWakeLockRequested = false;
+      await releaseWakeLock();
+      showToast('Anti-Sleep: NONAKTIF');
+    } else {
+      isWakeLockRequested = true;
+      await requestWakeLock();
+      showToast('Anti-Sleep: AKTIF (Layar tidak akan padam)');
+    }
+  }
+
+  // Touch Swipe (Next / Prev Song) and Double-Tap (Play/Pause)
+  function setupTouchGestures() {
+    if (!DOM.stageViewport) return;
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartTime = 0;
+
+    DOM.stageViewport.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+      }
+    }, { passive: true });
+
+    DOM.stageViewport.addEventListener('touchend', (e) => {
+      if (e.changedTouches.length === 1) {
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const diffX = touchEndX - touchStartX;
+        const diffY = touchEndY - touchStartY;
+        const elapsed = Date.now() - touchStartTime;
+
+        // Check horizontal swipe: at least 65px horizontal, less than 65px vertical, within 550ms
+        if (Math.abs(diffX) > 65 && Math.abs(diffY) < 65 && elapsed < 550) {
+          if (diffX < 0) {
+            nextSong();
+            showToast(`Lagu Berikutnya: ${getActiveSong().title}`);
+          } else {
+            prevSong();
+            showToast(`Lagu Sebelumnya: ${getActiveSong().title}`);
+          }
+        }
+      }
+    }, { passive: true });
+
+    // Double-tap on sheet area to toggle auto-scroll
+    let lastTapTime = 0;
+    DOM.stageViewport.addEventListener('click', (e) => {
+      if (e.target.closest('.chord-token') || e.target.closest('button') || e.target.closest('input') || e.target.closest('select')) {
+        return;
+      }
+      const currentTime = Date.now();
+      const tapLength = currentTime - lastTapTime;
+      if (tapLength < 320 && tapLength > 0) {
+        toggleAutoScroll();
+        lastTapTime = 0;
+      } else {
+        lastTapTime = currentTime;
+      }
+    });
+  }
+
+
+  /* ==========================================================================
      20. BIND DOM EVENT LISTENERS
      ========================================================================== */
 
   function bindEvents() {
+    // Screen Wake Lock & Mobile Dock
+    if (DOM.btnWakeLock) {
+      DOM.btnWakeLock.addEventListener('click', toggleWakeLock);
+    }
+    if (DOM.btnMobileSidebarToggle) {
+      DOM.btnMobileSidebarToggle.addEventListener('click', toggleSidebar);
+    }
+    if (DOM.btnMobileTransDown) {
+      DOM.btnMobileTransDown.addEventListener('click', transposeDown);
+    }
+    if (DOM.btnMobileTransUp) {
+      DOM.btnMobileTransUp.addEventListener('click', transposeUp);
+    }
+
+    // Auto re-acquire wake lock when tab becomes visible again
+    document.addEventListener('visibilitychange', async () => {
+      if (isWakeLockRequested && document.visibilityState === 'visible') {
+        await requestWakeLock();
+      }
+    });
+
+    // Touch Gestures (Swipe for Next/Prev, Double-tap for Auto-Scroll)
+    setupTouchGestures();
     // Stage Header Buttons
     DOM.btnToggleSidebar.addEventListener('click', toggleSidebar);
     DOM.btnCloseSidebar.addEventListener('click', closeSidebar);
@@ -2868,6 +3020,7 @@ Semua chord di atas lirik presisi`;
     populateSetlistDropdown();
     renderActiveSong();
     renderSetlistMenu();
+    requestWakeLock();
   }
 
   // Run on DOM Ready

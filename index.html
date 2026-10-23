@@ -156,6 +156,12 @@
         <span class="btn-badge-key">H</span>
       </button>
 
+      <!-- Screen Wake Lock / Anti-Sleep on Stage -->
+      <button id="btn-wake-lock" class="btn-icon-subtle stage-wake-btn" title="Cegah Layar Tidur/Padam Saat Manggung (Wake Lock)" aria-label="Toggle Screen Wake Lock">
+        <svg id="icon-wake-active" viewBox="0 0 24 24" class="svg-icon"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span class="wake-live-dot" title="Layar Tetap Menyala"></span>
+      </button>
+
       <!-- Fullscreen Button -->
       <button id="btn-fullscreen" class="btn-icon-subtle" title="Layar Penuh [F]" aria-label="Toggle Fullscreen">
         <svg id="icon-fs-enter" viewBox="0 0 24 24" class="svg-icon"><path d="M3 8V3h5M21 8V3h-5M3 16v5h5M21 16v5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -330,19 +336,30 @@
     </div>
   </main>
 
-  <!-- Floating Quick Nav Buttons (Next / Prev Song in Setlist) -->
-  <nav class="stage-nav-floater" aria-label="Navigasi Lagu">
+  <!-- Floating & Mobile Stage Controller Bar (Next/Prev, Scroll, Transpose, Setlist) -->
+  <nav id="stage-nav-floater" class="stage-nav-floater" aria-label="Navigasi Lagu Panggung">
+    <button id="btn-mobile-sidebar-toggle" class="btn-nav-float btn-nav-secondary mobile-only" title="Buka Setlist [S]" aria-label="Buka Setlist">
+      <svg viewBox="0 0 24 24" class="svg-mini"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span>SETLIST</span>
+    </button>
     <button id="btn-prev-song" class="btn-nav-float" title="Lagu Sebelumnya [Page Up / [ ]" aria-label="Lagu Sebelumnya">
       <svg viewBox="0 0 24 24" class="svg-mini"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
       <span>PREV</span>
     </button>
     <button id="btn-quick-scroll-pause" class="btn-nav-float btn-nav-scroll" title="Play/Pause Scroll [Spasi]" aria-label="Toggle Auto Scroll">
+      <svg id="mobile-icon-scroll-play" viewBox="0 0 24 24" class="svg-mini mr-1"><polygon points="6,4 20,12 6,20" fill="currentColor"/></svg>
+      <svg id="mobile-icon-scroll-pause" viewBox="0 0 24 24" class="svg-mini mr-1 d-none"><rect x="6" y="4" width="4" height="16" fill="currentColor"/><rect x="14" y="4" width="4" height="16" fill="currentColor"/></svg>
       <span id="quick-scroll-text">SCROLL</span>
     </button>
     <button id="btn-next-song" class="btn-nav-float" title="Lagu Berikutnya [Page Down / ] ]" aria-label="Lagu Berikutnya">
       <span>NEXT</span>
       <svg viewBox="0 0 24 24" class="svg-mini"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
     </button>
+    <div class="mobile-transpose-dock mobile-only" role="group" aria-label="Mobile Transpose">
+      <button id="btn-mobile-trans-down" class="btn-nav-mini" title="Transpose Turun">b</button>
+      <span id="mobile-key-pill" class="mobile-key-badge">C</span>
+      <button id="btn-mobile-trans-up" class="btn-nav-mini" title="Transpose Naik">#</button>
+    </div>
   </nav>
 
   <!-- MODAL 1: Input / Auto-Parse & Edit Song -->
