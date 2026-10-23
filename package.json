@@ -5,7 +5,39 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "build": "electron-builder",
+    "dist:portable": "electron-builder --win portable",
+    "dist:installer": "electron-builder --win nsis",
     "test": "echo \"Error: no test specified\" && exit 0"
+  },
+  "build": {
+    "appId": "com.kzdra.seechart",
+    "productName": "SeeChart",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   },
   "keywords": [
     "chord",
@@ -18,6 +50,7 @@
   "author": "KZdra",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^34.5.8"
+    "electron": "^34.5.8",
+    "electron-builder": "^26.15.3"
   }
 }

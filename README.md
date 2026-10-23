@@ -135,4 +135,29 @@ Aplikasi ini tetap 100% kompatibel sebagai web browser SPA:
 - Buka file [`index.html`](file:///h:/projekk/SeeChart/index.html) langsung di peramban web modern, ATAU
 - Gunakan ekstensi **Live Preview / Live Server** pada editor kode Anda.
 
+---
+
+## 📦 Cara Build Menjadi File .EXE (Windows Standalone)
+
+Anda dapat mengompilasi SeeChart menjadi file executable (`.exe`) untuk Windows dengan perintah berikut:
+
+### 1. Build File Installer & Portable Sekaligus:
+```bash
+npm run build
+```
+File `.exe` akan dibuat di dalam folder `dist/`:
+- `dist/SeeChart Setup 1.0.0.exe` (File Installer resmi Windows)
+- `dist/SeeChart 1.0.0.exe` (File Portable — bisa langsung diklik dari flashdisk tanpa instalasi!)
+
+### 2. Build Hanya Versi Portable (Single Executable):
+```bash
+npm run dist:portable
+```
+
+### 3. Build Hanya Versi Setup Installer:
+```bash
+npm run dist:installer
+```
+
+
 
