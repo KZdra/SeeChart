@@ -123,7 +123,16 @@ Musisi di atas panggung dapat mengendalikan seluruh aplikasi langsung melalui ke
 
 ## 🚀 Cara Menjalankan
 
-Aplikasi ini 100% *zero-dependency* dan tidak membutuhkan build step. Cukup buka file:
-- Buka file [`index.html`](file:///h:/projekk/SeeChart/index.html) langsung di peramban web modern (Google Chrome, Microsoft Edge, Mozilla Firefox, Safari), ATAU
+### Opsi 1: Aplikasi Desktop (Electron — Fullscreen Panggung Otomatis)
+Aplikasi telah dibungkus ke dalam **Electron Desktop Application**. Saat dijalankan, aplikasi akan langsung membuka dalam mode **Fullscreen Penuh** dengan sistem pencegah layar mati bawaan (*Native Power Save Blocker*):
+```bash
+# Jalankan aplikasi desktop
+npm start
+```
+
+### Opsi 2: Browser Web / Live Preview
+Aplikasi ini tetap 100% kompatibel sebagai web browser SPA:
+- Buka file [`index.html`](file:///h:/projekk/SeeChart/index.html) langsung di peramban web modern, ATAU
 - Gunakan ekstensi **Live Preview / Live Server** pada editor kode Anda.
+
 

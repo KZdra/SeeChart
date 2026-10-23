@@ -1,6 +1,13 @@
+# Node & Electron dependencies
+node_modules/
+dist/
+out/
+package-lock.json
+
 # OS & Editor files
 .DS_Store
 Thumbs.db
 *.log
 .vscode/
 .idea/
+

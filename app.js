@@ -1607,11 +1607,22 @@ Bm`
     }
   }
 
+  function updateFullscreenUI(isFullscreen) {
+    if (DOM.iconFsEnter && DOM.iconFsExit) {
+      DOM.iconFsEnter.classList.toggle('d-none', isFullscreen);
+      DOM.iconFsExit.classList.toggle('d-none', !isFullscreen);
+    }
+  }
+
   function toggleFullscreen() {
+    if (window.electronAPI && typeof window.electronAPI.toggleFullscreen === 'function') {
+      window.electronAPI.toggleFullscreen();
+      return;
+    }
+
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().then(() => {
-        DOM.iconFsEnter.classList.add('d-none');
-        DOM.iconFsExit.classList.remove('d-none');
+        updateFullscreenUI(true);
         showToast('Layar Penuh (Fullscreen)');
       }).catch(err => {
         console.warn('Fullscreen error:', err);
@@ -1619,19 +1630,23 @@ Bm`
     } else {
       if (document.exitFullscreen) {
         document.exitFullscreen().then(() => {
-          DOM.iconFsEnter.classList.remove('d-none');
-          DOM.iconFsExit.classList.add('d-none');
+          updateFullscreenUI(false);
         });
       }
     }
   }
 
   document.addEventListener('fullscreenchange', () => {
-    if (!document.fullscreenElement) {
-      DOM.iconFsEnter.classList.remove('d-none');
-      DOM.iconFsExit.classList.add('d-none');
-    }
+    updateFullscreenUI(Boolean(document.fullscreenElement));
   });
+
+  // Listen to Electron native fullscreen events
+  if (typeof window !== 'undefined' && window.electronAPI && typeof window.electronAPI.onFullscreenChange === 'function') {
+    window.electronAPI.onFullscreenChange((isFullscreen) => {
+      updateFullscreenUI(isFullscreen);
+      showToast(isFullscreen ? 'Layar Penuh (Fullscreen)' : 'Keluar Layar Penuh');
+    });
+  }
 
 
   /* ==========================================================================
@@ -2670,9 +2685,12 @@ Bm`
 
   function updateWakeLockUI(isActive) {
     if (!DOM.btnWakeLock) return;
-    if (isActive) {
+    const isDesktopApp = Boolean(typeof window !== 'undefined' && window.electronAPI && window.electronAPI.isElectron);
+    if (isActive || isDesktopApp) {
       DOM.btnWakeLock.classList.remove('off');
-      DOM.btnWakeLock.title = 'Layar Panggung: Tetap Menyala (Anti-Sleep ON)';
+      DOM.btnWakeLock.title = isDesktopApp
+        ? 'Layar Panggung: Desktop Native Anti-Sleep Aktif'
+        : 'Layar Panggung: Tetap Menyala (Anti-Sleep ON)';
     } else {
       DOM.btnWakeLock.classList.add('off');
       DOM.btnWakeLock.title = 'Layar Panggung: Normal (Klik untuk Anti-Sleep)';

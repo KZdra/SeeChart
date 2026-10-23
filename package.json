@@ -1,0 +1,23 @@
+{
+  "name": "seechart",
+  "version": "1.0.0",
+  "description": "SeeChart — Live Stage Sheet & Chord Viewer",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 0"
+  },
+  "keywords": [
+    "chord",
+    "lyrics",
+    "sheet-music",
+    "stage",
+    "musician",
+    "electron"
+  ],
+  "author": "KZdra",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^34.5.8"
+  }
+}
