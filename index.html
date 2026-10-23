@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SeeChart — Live Stage Sheet & Chord Viewer</title>
+  <meta name="description" content="Aplikasi contekan chord dan lirik lagu interaktif untuk live stage, latihan band, keyboardis, dan vokalis dengan fitur auto-transpose, auto-scroll, dan kontrol keyboard.">
+  
+  <!-- Google Fonts: Modern UI typography & Monospace for precise alignment -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="stage-dark theme-amber">
+  <!-- Top Progress / Auto-Scroll Indicator Bar -->
+  <div id="scroll-progress-bar" class="scroll-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+
+  <!-- App Header / Stage Navigation Bar -->
+  <header id="main-header" class="stage-header">
+    <div class="header-left">
+      <button id="btn-toggle-sidebar" class="btn-icon" title="Daftar Lagu / Setlist [S]" aria-label="Buka Setlist">
+        <svg viewBox="0 0 24 24" class="svg-icon"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span class="btn-badge-key">S</span>
+      </button>
+
+      <div class="brand">
+        <div class="logo-mark">
+          <svg viewBox="0 0 24 24" class="logo-svg"><path d="M9 18V5l12-2v13M9 9l12-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="18" r="3" fill="currentColor"/><circle cx="18" cy="16" r="3" fill="currentColor"/></svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">SeeChart</span>
+          <span class="brand-tag">STAGE PRO</span>
+        </div>
+      </div>
+
+      <!-- Live Stage Clock -->
+      <div class="stage-clock-badge" id="stage-clock-container" title="Waktu Panggung Real-Time">
+        <span class="clock-live-dot"></span>
+        <span id="stage-clock-time">00:00:00</span>
+      </div>
+
+      <!-- Gig Stage Countdown Timer & Stopwatch -->
+      <div class="stage-timer-container">
+        <button id="stage-timer-badge" class="stage-timer-badge" title="Timer Panggung / Hitung Mundur [W]">
+          <svg viewBox="0 0 24 24" class="svg-mini"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><polyline points="12 6 12 12 16 14" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+          <span id="stage-timer-display">45:00</span>
+          <span class="btn-badge-key">W</span>
+        </button>
+        <div id="stage-timer-popup" class="stage-timer-popup d-none">
+          <div class="timer-popup-header">Timer Durasi Panggung</div>
+          <div class="timer-presets-row">
+            <button class="btn-timer-preset" data-mins="30">30m</button>
+            <button class="btn-timer-preset active" data-mins="45">45m</button>
+            <button class="btn-timer-preset" data-mins="60">60m</button>
+            <button class="btn-timer-preset" data-mins="90">90m</button>
+            <button class="btn-timer-preset" data-mins="0">Stopwatch</button>
+          </div>
+          <div class="timer-actions-row">
+            <button id="btn-timer-start-pause" class="btn-primary" style="padding:4px 12px; font-size:0.75rem;">Mulai</button>
+            <button id="btn-timer-reset" class="btn-subtle" style="padding:4px 12px; font-size:0.75rem;">Reset</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: Active Song Info & Key Transpose Controls -->
+    <div class="header-center">
+      <div class="active-song-meta">
+        <span id="header-song-title" class="song-title-display">Memuat Lagu...</span>
+        <span id="header-song-artist" class="song-artist-display">Artis</span>
+      </div>
+
+      <!-- Transpose Controller Pill -->
+      <div class="transpose-control-group" role="group" aria-label="Kontrol Transpose Chord">
+        <button id="btn-transpose-down" class="btn-transpose" title="Turunkan 1 Semitone [ < / [ ]" aria-label="Transpose Down">
+          <svg viewBox="0 0 24 24" class="svg-mini"><path d="M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+        </button>
+        <div class="transpose-status" id="btn-transpose-reset" title="Klik untuk Reset ke Nada Asal" role="button" tabindex="0">
+          <span class="transpose-label">NADA</span>
+          <span id="transpose-value" class="transpose-val">0</span>
+          <span id="key-indicator" class="key-badge">C</span>
+        </div>
+        <button id="btn-transpose-up" class="btn-transpose" title="Naikkan 1 Semitone [ > / ] ]" aria-label="Transpose Up">
+          <svg viewBox="0 0 24 24" class="svg-mini"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+        </button>
+        <button id="btn-accidental-toggle" class="btn-toggle-pill" title="Ganti Simbol Notasi (# Kres / b Mol)" aria-label="Pilih Kres atau Mol">
+          <span id="accidental-mode-text">#</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Right: Stage Actions & Viewport Controls -->
+    <div class="header-right">
+      <!-- Auto Scroll Quick Control -->
+      <div class="autoscroll-header-group">
+        <button id="btn-autoscroll-toggle" class="btn-autoscroll" title="Mulai / Jeda Auto-Scroll [Spasi]" aria-label="Toggle Auto Scroll">
+          <span class="autoscroll-icon-wrap">
+            <svg id="icon-scroll-play" viewBox="0 0 24 24" class="svg-icon"><polygon points="6,4 20,12 6,20" fill="currentColor"/></svg>
+            <svg id="icon-scroll-pause" viewBox="0 0 24 24" class="svg-icon d-none"><rect x="6" y="4" width="4" height="16" fill="currentColor"/><rect x="14" y="4" width="4" height="16" fill="currentColor"/></svg>
+          </span>
+          <span id="autoscroll-btn-label">SCROLL</span>
+          <span class="btn-badge-key">SPASI</span>
+        </button>
+        
+        <div class="scroll-speed-wrapper">
+          <button id="btn-speed-minus" class="btn-speed-step" title="Kurangi Kecepatan [Panah Kiri]">-</button>
+          <span id="scroll-speed-display" class="speed-indicator" title="Kecepatan Scroll">1.5x</span>
+          <button id="btn-speed-plus" class="btn-speed-step" title="Tambah Kecepatan [Panah Kanan]">+</button>
+        </div>
+      </div>
+
+      <!-- Font Size Quick Controls -->
+      <div class="font-size-group" role="group" aria-label="Ukuran Font">
+        <button id="btn-font-smaller" class="btn-icon-subtle" title="Perkecil Font [-]" aria-label="Perkecil Font">
+          <span class="font-zoom-icon">A-</span>
+        </button>
+        <span id="font-size-display" class="font-size-label">20px</span>
+        <button id="btn-font-larger" class="btn-icon-subtle" title="Perbesar Font [+]" aria-label="Perbesar Font">
+          <span class="font-zoom-icon">A+</span>
+        </button>
+      </div>
+
+      <!-- Stage Visual Style Dropdown / Presets -->
+      <div class="theme-picker-group">
+        <button id="btn-theme-picker" class="btn-icon-subtle" title="Ubah Palet Warna Panggung" aria-label="Ubah Tema Warna">
+          <span class="color-dot-indicator"></span>
+        </button>
+        <div id="theme-dropdown" class="theme-dropdown d-none">
+          <div class="theme-dropdown-header">Warna Chord Panggung</div>
+          <button class="theme-opt-btn" data-theme="theme-amber"><span class="swatch amber"></span> Stage Amber (Emas)</button>
+          <button class="theme-opt-btn" data-theme="theme-cyan"><span class="swatch cyan"></span> Electric Cyan (Biru)</button>
+          <button class="theme-opt-btn" data-theme="theme-lime"><span class="swatch lime"></span> Neon Lime (Hijau)</button>
+          <button class="theme-opt-btn" data-theme="theme-magenta"><span class="swatch magenta"></span> Cyber Pink (Magenta)</button>
+          <button class="theme-opt-btn" data-theme="theme-white"><span class="swatch white"></span> High Contrast White</button>
+        </div>
+      </div>
+
+      <!-- 2-Column Split View Toggle Button -->
+      <button id="btn-toggle-columns" class="btn-icon-subtle" title="Mode 2 Kolom (Berdampingan Tanpa Scroll) [C]" aria-label="Toggle 2 Columns">
+        <svg viewBox="0 0 24 24" class="svg-icon"><rect x="3" y="4" width="8" height="16" rx="1.5" stroke="currentColor" stroke-width="2" fill="none"/><rect x="13" y="4" width="8" height="16" rx="1.5" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+        <span class="btn-badge-key">C</span>
+      </button>
+
+      <!-- Metronome Button -->
+      <button id="btn-metronome-toggle" class="btn-icon-subtle" title="Stage Metronome [M]" aria-label="Buka Metronom">
+        <svg viewBox="0 0 24 24" class="svg-icon"><path d="M12 2L6 21h12L12 2zM12 6l5 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="btn-badge-key">M</span>
+      </button>
+
+      <!-- Stage Clean Mode (Hide all UI) -->
+      <button id="btn-stage-clean" class="btn-stage-mode" title="Stage Clean Mode / Sembunyikan Panel [H]" aria-label="Stage Clean Mode">
+        <svg viewBox="0 0 24 24" class="svg-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+        <span>BERSIH</span>
+        <span class="btn-badge-key">H</span>
+      </button>
+
+      <!-- Fullscreen Button -->
+      <button id="btn-fullscreen" class="btn-icon-subtle" title="Layar Penuh [F]" aria-label="Toggle Fullscreen">
+        <svg id="icon-fs-enter" viewBox="0 0 24 24" class="svg-icon"><path d="M3 8V3h5M21 8V3h-5M3 16v5h5M21 16v5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg id="icon-fs-exit" viewBox="0 0 24 24" class="svg-icon d-none"><path d="M8 3v5H3M16 3v5h5M8 21v-5H3M16 21v-5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+
+      <!-- Keyboard Shortcuts Help -->
+      <button id="btn-shortcuts-modal" class="btn-icon-subtle" title="Panduan Tombol Keyboard [?]" aria-label="Keyboard Shortcuts">
+        <svg viewBox="0 0 24 24" class="svg-icon"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+
+      <!-- New/Paste Song Button -->
+      <button id="btn-new-song" class="btn-primary-action" title="Input / Paste Teks Chord Baru [N]">
+        <svg viewBox="0 0 24 24" class="svg-icon"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Paste Chord</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Floating Stage HUD (Appears when Header is Hidden in Clean Mode or on Hover) -->
+  <aside id="stage-floating-hud" class="stage-floating-hud d-none" aria-label="Stage Floating Controls">
+    <button id="hud-exit-clean" class="hud-pill-btn" title="Tampilkan Kontrol Normal [H atau Esc]">
+      <svg viewBox="0 0 24 24" class="svg-mini"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+      <span>TAMPILKAN PANEL [H]</span>
+    </button>
+    <div class="hud-separator"></div>
+    <button id="hud-transpose-down" class="hud-circle-btn" title="Transpose Down [-1]">b</button>
+    <span id="hud-key-badge" class="hud-key-display">C</span>
+    <button id="hud-transpose-up" class="hud-circle-btn" title="Transpose Up [+1]">#</button>
+    <div class="hud-separator"></div>
+    <button id="hud-autoscroll-toggle" class="hud-play-btn" title="Auto-Scroll [Spasi]">
+      <svg id="hud-scroll-icon" viewBox="0 0 24 24" class="svg-mini"><polygon points="6,4 20,12 6,20" fill="currentColor"/></svg>
+    </button>
+    <span id="hud-speed-display" class="hud-speed-display">1.5x</span>
+    <div class="hud-separator"></div>
+    <button id="hud-font-down" class="hud-circle-btn" title="Perkecil Font [-]">A-</button>
+    <button id="hud-font-up" class="hud-circle-btn" title="Perbesar Font [+]">A+</button>
+  </aside>
+
+  <!-- Side Drawer: Songbook & Setlist Manager -->
+  <aside id="setlist-sidebar" class="setlist-sidebar" aria-label="Setlist Lagu">
+    <div class="sidebar-header">
+      <div class="sidebar-title-row">
+        <h3>
+          <svg viewBox="0 0 24 24" class="svg-icon mr-2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15z" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+          Setlist Panggung
+        </h3>
+        <button id="btn-close-sidebar" class="btn-icon-subtle" title="Tutup [Esc / S]" aria-label="Tutup Setlist">
+          <svg viewBox="0 0 24 24" class="svg-icon"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2"/></svg>
+        </button>
+      </div>
+
+      <!-- Search Input -->
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" class="search-icon"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2" fill="none"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2"/></svg>
+        <input type="text" id="setlist-search-input" placeholder="Cari judul lagu atau artis..." autocomplete="off">
+        <button id="btn-clear-search" class="btn-clear-search d-none">&times;</button>
+      </div>
+    </div>
+
+    <!-- Setlist Selector Bar (Library vs Custom Gig Setlists) -->
+    <div class="setlist-selector-bar">
+      <div class="setlist-select-top">
+        <span class="setlist-label">SETLIST PANGGUNG:</span>
+        <button id="btn-create-setlist" class="btn-create-setlist" title="Buat Setlist Baru">+ Buat Setlist</button>
+      </div>
+      <div class="setlist-select-wrap">
+        <select id="select-active-setlist" class="select-active-setlist">
+          <option value="all">Semua Lagu (Library)</option>
+        </select>
+        <button id="btn-edit-setlist-songs" class="btn-icon-subtle btn-setlist-edit" title="Pilih / Kelola Lagu di Setlist Ini">
+          <svg viewBox="0 0 24 24" class="svg-mini"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Setlist Action Toolbar -->
+    <div class="setlist-toolbar">
+      <button id="btn-sidebar-add-song" class="btn-tool-action">
+        <svg viewBox="0 0 24 24" class="svg-mini"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2"/></svg>
+        <span>Lagu Baru</span>
+      </button>
+      <button id="btn-restore-samples" class="btn-tool-subtle" title="Muat Ulang Lagu Sampel Lengkap">
+        <svg viewBox="0 0 24 24" class="svg-mini"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5" stroke="currentColor" stroke-width="2"/></svg>
+        <span>Reset Sampel</span>
+      </button>
+    </div>
+
+    <!-- Song List Container -->
+    <div id="setlist-items-container" class="setlist-items-list" role="list">
+      <!-- Song cards populated dynamically -->
+    </div>
+
+    <!-- Setlist Footer Stats -->
+    <div class="sidebar-footer">
+      <div class="setlist-stats">
+        <span id="setlist-count">0 Lagu</span>
+        <span class="stats-dot">•</span>
+        <span id="setlist-storage-hint">Tersimpan di Browser</span>
+      </div>
+      <div class="sidebar-footer-actions">
+        <button id="btn-export-setlist" class="btn-footer-link" title="Simpan Cadangan JSON Setlist">Ekspor</button>
+        <button id="btn-import-setlist" class="btn-footer-link" title="Impor File JSON Setlist">Impor</button>
+        <input type="file" id="input-file-import" accept=".json" class="d-none">
+      </div>
+    </div>
+  </aside>
+
+  <!-- Sidebar Overlay Backdrop -->
+  <div id="sidebar-backdrop" class="sidebar-backdrop d-none"></div>
+
+  <!-- Main Stage Viewport / Lyric & Chord Sheet -->
+  <main id="stage-viewport" class="stage-viewport" tabindex="0">
+    <!-- Active Song Hero Section / Stage Banner -->
+    <section id="song-stage-header" class="song-stage-banner">
+      <div class="banner-inner">
+        <div class="banner-title-row">
+          <h1 id="stage-song-title" class="stage-song-title">Judul Lagu</h1>
+          <span id="stage-key-pill" class="stage-key-pill" title="Kunci Nada Saat Ini">Kunci: C</span>
+        </div>
+        <div class="banner-meta-row">
+          <span id="stage-song-artist" class="stage-song-artist">Nama Artis / Band</span>
+          <span class="banner-divider">•</span>
+          <span id="stage-song-tempo" class="stage-meta-item">BPM: 120</span>
+          <span class="banner-divider">•</span>
+          <span id="stage-song-capo" class="stage-meta-item">No Capo</span>
+          <span class="banner-divider">•</span>
+          <span id="stage-transpose-offset" class="stage-meta-item">Asli</span>
+        </div>
+      </div>
+      <div class="stage-header-actions">
+        <button id="btn-edit-current-song" class="btn-outline-stage" title="Edit Teks Lagu Ini">
+          <svg viewBox="0 0 24 24" class="svg-mini"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2"/></svg>
+          <span>Edit Teks</span>
+        </button>
+        <button id="btn-print-sheet" class="btn-outline-stage" title="Cetak / Simpan PDF Lembar Chord">
+          <svg viewBox="0 0 24 24" class="svg-mini"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" stroke="currentColor" stroke-width="2"/><rect x="6" y="14" width="12" height="8" stroke="currentColor" stroke-width="2"/></svg>
+          <span>Cetak / PDF</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Stage Performance Cue Notes Box -->
+    <div id="stage-cue-box" class="stage-cue-box d-none">
+      <div class="cue-box-header">
+        <div class="cue-title">
+          <svg viewBox="0 0 24 24" class="svg-mini mr-2"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+          <span>CATATAN PANGGUNG (STAGE CUES)</span>
+        </div>
+        <button id="btn-edit-inline-cue" class="btn-cue-edit" title="Ubah Catatan Lagu Ini">Edit Catatan</button>
+      </div>
+      <div id="stage-cue-text" class="cue-box-content"></div>
+    </div>
+
+    <!-- Reading Spotlight Beam (Optional visual guide) -->
+    <div id="stage-reading-line" class="stage-reading-line d-none"></div>
+
+    <!-- Formatted Sheet Render Container -->
+    <article id="sheet-render-container" class="sheet-render-container font-size-medium" aria-label="Teks Chord dan Lirik">
+      <!-- Generated Lines of Chords, Lyrics, Section Headers go here -->
+    </article>
+
+    <!-- Stage Viewport Bottom Spacer for Clean Scrolling -->
+    <div class="stage-viewport-end-spacer">
+      <div class="end-marker">
+        <span>••• AKHIR LAGU •••</span>
+        <button id="btn-jump-top" class="btn-jump-top" title="Kembali ke Bagian Awal [Home]">
+          <svg viewBox="0 0 24 24" class="svg-mini"><path d="M18 15l-6-6-6 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+          <span>Kembali ke Atas</span>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Floating Quick Nav Buttons (Next / Prev Song in Setlist) -->
+  <nav class="stage-nav-floater" aria-label="Navigasi Lagu">
+    <button id="btn-prev-song" class="btn-nav-float" title="Lagu Sebelumnya [Page Up / [ ]" aria-label="Lagu Sebelumnya">
+      <svg viewBox="0 0 24 24" class="svg-mini"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+      <span>PREV</span>
+    </button>
+    <button id="btn-quick-scroll-pause" class="btn-nav-float btn-nav-scroll" title="Play/Pause Scroll [Spasi]" aria-label="Toggle Auto Scroll">
+      <span id="quick-scroll-text">SCROLL</span>
+    </button>
+    <button id="btn-next-song" class="btn-nav-float" title="Lagu Berikutnya [Page Down / ] ]" aria-label="Lagu Berikutnya">
+      <span>NEXT</span>
+      <svg viewBox="0 0 24 24" class="svg-mini"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+    </button>
+  </nav>
+
+  <!-- MODAL 1: Input / Auto-Parse & Edit Song -->
+  <div id="modal-song-editor" class="modal-backdrop d-none" role="dialog" aria-modal="true" aria-labelledby="modal-editor-title">
+    <div class="modal-window modal-wide">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg viewBox="0 0 24 24" class="svg-icon mr-2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2" fill="none"/><polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="2" fill="none"/><line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2"/><line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2"/><polyline points="10 9 9 9 8 9" stroke="currentColor" stroke-width="2"/></svg>
+          <h2 id="modal-editor-title">Input & Auto-Parse Teks Chord</h2>
+        </div>
+        <button id="btn-close-editor" class="btn-icon-subtle" title="Tutup Modal [Esc]" aria-label="Tutup">
+          &times;
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Metadata Form Fields -->
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="input-song-title">Judul Lagu <span class="required">*</span></label>
+            <input type="text" id="input-song-title" placeholder="Contoh: Kangen, Sempurna, Dan..." required>
+          </div>
+          <div class="form-group">
+            <label for="input-song-artist">Artis / Band</label>
+            <input type="text" id="input-song-artist" placeholder="Contoh: Dewa 19, Sheila on 7...">
+          </div>
+          <div class="form-group">
+            <label for="input-song-key">Kunci Asli</label>
+            <select id="input-song-key">
+              <option value="AUTO">Deteksi Otomatis</option>
+              <option value="C">C</option>
+              <option value="C#">C# / Db</option>
+              <option value="D">D</option>
+              <option value="D#">D# / Eb</option>
+              <option value="E">E</option>
+              <option value="F">F</option>
+              <option value="F#">F# / Gb</option>
+              <option value="G">G</option>
+              <option value="G#">G# / Ab</option>
+              <option value="A">A</option>
+              <option value="A#">A# / Bb</option>
+              <option value="B">B</option>
+              <option value="Am">Am</option>
+              <option value="Bm">Bm</option>
+              <option value="Cm">Cm</option>
+              <option value="Dm">Dm</option>
+              <option value="Em">Em</option>
+              <option value="Fm">Fm</option>
+              <option value="Gm">Gm</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="input-song-tempo">Tempo (BPM)</label>
+            <input type="number" id="input-song-tempo" placeholder="120" min="40" max="240">
+          </div>
+          <div class="form-group">
+            <label for="input-song-capo">Capo (Opsional)</label>
+            <input type="text" id="input-song-capo" placeholder="Contoh: Fret 2 / Tanpa Capo">
+          </div>
+          <div class="form-group form-group-span">
+            <label for="input-song-notes">Catatan Panggung / Stage Cues (Opsional)</label>
+            <input type="text" id="input-song-notes" placeholder="Contoh: Keyboard: Rhodes + Delay di bait 2 | Gitar: Solo 8 bar | Drum: Masuk di ketukan 4">
+          </div>
+        </div>
+
+        <!-- Input Source Tabs & Helper Actions -->
+        <div class="editor-tabs-bar">
+          <div class="tab-label">
+            <span>Tempel Teks Mentah dari Chordtela, Ultimate Guitar, atau format standar:</span>
+          </div>
+          <div class="editor-actions-strip">
+            <button type="button" id="btn-paste-clipboard" class="btn-chip" title="Paste langsung dari Clipboard">
+              <svg viewBox="0 0 24 24" class="svg-mini"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" stroke="currentColor" stroke-width="2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1" stroke="currentColor" stroke-width="2"/></svg>
+              <span>Paste Clipboard</span>
+            </button>
+            <button type="button" id="btn-clean-chords" class="btn-chip" title="Bersihkan teks iklan / footer Chordtela otomatis">
+              <svg viewBox="0 0 24 24" class="svg-mini"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="currentColor" stroke-width="2"/></svg>
+              <span>Auto-Clean Ads</span>
+            </button>
+            <button type="button" id="btn-load-template" class="btn-chip" title="Muat format template">
+              <span>Template Contoh</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Raw Textarea with Monospace styling -->
+        <div class="textarea-container">
+          <textarea id="raw-song-textarea" class="raw-chord-textarea" spellcheck="false" placeholder="[Intro]
+C  G/B  Am  G
+F  Em   Dm  G
+
+[Verse 1]
+C             Em
+Kutrima suratmu
+F                 C
+Telah kubaca dan aku mengerti
+Dm            G
+Betapa merindunya dirimu..."></textarea>
+        </div>
+
+        <div class="parser-hint-row">
+          <span class="hint-text">
+            <strong>Tips Parser:</strong> Sistem otomatis mendeteksi baris chord di atas lirik, section seperti <code>[Intro]</code>, <code>[Chorus]</code>, <code>[Reff]</code>, serta tab gitar.
+          </span>
+          <span id="detected-lines-stat" class="detected-stat">0 baris terdeteksi</span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="btn-cancel-editor" class="btn-subtle">Batal</button>
+        <button id="btn-preview-song" class="btn-secondary">Lihat Hasil Parse</button>
+        <button id="btn-save-song" class="btn-primary">
+          <svg viewBox="0 0 24 24" class="svg-mini"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" stroke="currentColor" stroke-width="2"/><polyline points="17 21 17 13 7 13 7 21" stroke="currentColor" stroke-width="2"/></svg>
+          <span>Simpan ke Setlist</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Keyboard Shortcuts Help -->
+  <div id="modal-shortcuts" class="modal-backdrop d-none" role="dialog" aria-modal="true" aria-labelledby="modal-shortcuts-title">
+    <div class="modal-window">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg viewBox="0 0 24 24" class="svg-icon mr-2"><rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="2" fill="none"/><line x1="6" y1="8" x2="6.01" y2="8" stroke="currentColor" stroke-width="2"/><line x1="10" y1="8" x2="10.01" y2="8" stroke="currentColor" stroke-width="2"/><line x1="14" y1="8" x2="14.01" y2="8" stroke="currentColor" stroke-width="2"/><line x1="18" y1="8" x2="18.01" y2="8" stroke="currentColor" stroke-width="2"/><line x1="6" y1="12" x2="6.01" y2="12" stroke="currentColor" stroke-width="2"/><line x1="18" y1="12" x2="18.01" y2="12" stroke="currentColor" stroke-width="2"/><line x1="8" y1="16" x2="16" y2="16" stroke="currentColor" stroke-width="2"/></svg>
+          <h2 id="modal-shortcuts-title">Kontrol Keyboard Panggung (Stage Keybindings)</h2>
+        </div>
+        <button id="btn-close-shortcuts" class="btn-icon-subtle">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="shortcuts-grid">
+          <div class="shortcut-card">
+            <div class="key-badge-list">
+              <kbd>Spasi</kbd>
+            </div>
+            <div class="shortcut-desc">
+              <strong>Play / Pause Auto-Scroll</strong>
+              <span>Memulai atau menghentikan scroll otomatis saat live.</span>
+            </div>
+          </div>
+
+          <div class="shortcut-card">
+            <div class="key-badge-list">
+              <kbd>&darr;</kbd> atau <kbd>PageDown</kbd>
+            </div>
+            <div class="shortcut-desc">
+              <strong>Scroll Turun Halus</strong>
+              <span>Turun perlahan per section tanpa menyentuh mouse.</span>
+            </div>
+          </div>
+
+          <div class="shortcut-card">
+            <div class="key-badge-list">
+              <kbd>&uarr;</kbd> atau <kbd>PageUp</kbd>
+            </div>
+            <div class="shortcut-desc">
+              <strong>Scroll Naik Halus</strong>
+              <span>Kembali ke baris chord sebelumnya.</span>
+            </div>
+          </div>
+
+          <div class="shortcut-card">
+            <div class="key-badge-list">
+              <kbd>+</kbd> / <kbd>=</kbd> &amp; <kbd>-</kbd>
+            </div>
+            <div class="shortcut-desc">
+              <strong>Ubah Ukuran Font</strong>
+              <span>Perbesar atau perkecil teks lirik &amp; chord secara instan.</span>
+            </div>
+          </div>
+
+          <div class="shortcut-card">
+            <div class="key-badge-list">
+              <kbd>]</kbd> / <kbd>&gt;</kbd> &amp; <kbd>[</kbd> / <kbd>&lt;</kbd>
+            </div>
+            <div class="shortcut-desc">
+              <strong>Transpose Nada (+1 / -1)</strong>
+              <span>Naik atau turunkan nada dasar chord secara real-time.</span>
+            </div>
+          </div>
+
+          <div class="shortcut-card">
+            <div class="key-badge-list">
+              <kbd>T</kbd>
+            </div>
+            <div class="shortcut-desc">
+              <strong>Buka Panel Transpose</strong>
+              <span>Fokus langsung ke menu pengubah nada.</span>
+            </div>
+          </div>
+
+          <div class="shortcut-card">
+            <div class="key-badge-list">
+              <kbd>H</kbd>
+            </div>
+            <div class="shortcut-desc">
+              <strong>Stage Clean Mode (Layar Bersih)</strong>
+              <span>Sembunyikan semua tombol &amp; panel, fokus ke chord &amp; lirik saja.</span>
+            </div>
+          </div>
+
+          <div class="shortcut-card">
+            <div class="key-badge-list">
+              <kbd>F</kbd>
+            </div>
+            <div class="shortcut-desc">
+              <strong>Layar Penuh (Fullscreen)</strong>
+              <span>Maksimalkan tampilan ke seluruh monitor laptop.</span>
+            </div>
+          </div>
+
+          <div class="shortcut-card">
+            <div class="key-badge-list">
+              <kbd>&larr;</kbd> &amp; <kbd>&rarr;</kbd>
+            </div>
+            <div class="shortcut-desc">
+              <strong>Atur Kecepatan Scroll</strong>
+              <span>Kurangi atau percepat laju gerak auto-scroll.</span>
+            </div>
+          </div>
+
+          <div class="shortcut-card">
+            <div class="key-badge-list">
+              <kbd>S</kbd>
+            </div>
+            <div class="shortcut-desc">
+              <strong>Buka / Tutup Setlist</strong>
+              <span>Pilih lagu berikutnya dalam urutan panggung.</span>
+            </div>
+          </div>
+
+          <div class="shortcut-card">
+            <div class="key-badge-list">
+              <kbd>M</kbd>
+            </div>
+            <div class="shortcut-desc">
+              <strong>Toggle Metronome</strong>
+              <span>Nyalakan ketukan tempo visual panggung.</span>
+            </div>
+          </div>
+
+          <div class="shortcut-card">
+            <div class="key-badge-list">
+              <kbd>N</kbd>
+            </div>
+            <div class="shortcut-desc">
+              <strong>Paste / Lagu Baru</strong>
+              <span>Buka jendela input chord lagu baru.</span>
+            </div>
+          </div>
+
+          <div class="shortcut-card">
+            <div class="key-badge-list">
+              <kbd>Esc</kbd>
+            </div>
+            <div class="shortcut-desc">
+              <strong>Tutup Jendela / Keluar Clean Mode</strong>
+              <span>Kembali ke tampilan standar.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-ok-shortcuts" class="btn-primary">Saya Mengerti</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: Interactive Chord Details / Piano & Guitar Voicings -->
+  <div id="modal-chord-info" class="modal-backdrop d-none" role="dialog" aria-modal="true" aria-labelledby="modal-chord-name">
+    <div class="modal-window modal-chord-box">
+      <div class="modal-header">
+        <div class="chord-info-title-wrap">
+          <span class="chord-title-badge">CHORD INFO</span>
+          <h2 id="modal-chord-name" class="modal-chord-name">Cmaj7</h2>
+        </div>
+        <button id="btn-close-chord-info" class="btn-icon-subtle">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="chord-details-content">
+          <div class="chord-meta-block">
+            <div class="meta-item">
+              <span class="meta-label">Notasi Nada (Notes):</span>
+              <span id="chord-notes-text" class="meta-value">C - E - G - B</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Karakter / Formula:</span>
+              <span id="chord-formula-text" class="meta-value">1 - 3 - 5 - 7 (Major 7th)</span>
+            </div>
+          </div>
+
+          <!-- Instrument Voicing Switcher Tabs -->
+          <div class="chord-instrument-tabs">
+            <button id="tab-btn-guitar" class="chord-tab-btn active" type="button">🎸 Fretboard Gitar</button>
+            <button id="tab-btn-piano" class="chord-tab-btn" type="button">🎹 Tuts Piano</button>
+          </div>
+
+          <!-- Guitar Fretboard Representation -->
+          <div id="guitar-visualizer-wrap" class="guitar-visualizer-wrap">
+            <div class="visualizer-label">Diagram Chord Gitar (6 Senar):</div>
+            <div id="guitar-fretboard-display" class="guitar-fretboard-display">
+              <!-- SVG diagram rendered dynamically -->
+            </div>
+            <div id="guitar-chord-variation-hint" class="guitar-variation-hint">Posisi Standar (Open / Barre)</div>
+          </div>
+
+          <!-- Interactive Piano Keyboard Representation -->
+          <div id="piano-visualizer-wrap" class="keyboard-visualizer-wrap d-none">
+            <div class="visualizer-label">Piano / Keyboardist Voicing:</div>
+            <div id="piano-keys-display" class="piano-keyboard">
+              <!-- Keys generated dynamically -->
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-dismiss-chord" class="btn-primary">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: Custom Setlist Manager & Song Selector -->
+  <div id="modal-manage-setlists" class="modal-backdrop d-none" role="dialog" aria-modal="true" aria-labelledby="modal-setlist-title">
+    <div class="modal-window">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg viewBox="0 0 24 24" class="svg-icon mr-2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15z" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+          <h2 id="modal-setlist-title">Kelola Setlist Panggung</h2>
+        </div>
+        <button id="btn-close-setlist-modal" class="btn-icon-subtle">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="input-setlist-name">Nama Setlist</label>
+          <div class="setlist-name-row">
+            <input type="text" id="input-setlist-name" placeholder="Contoh: Manggung Kafe A, Wedding Gig, Latihan...">
+            <button id="btn-delete-current-setlist" class="btn-subtle text-danger" title="Hapus Setlist Ini">Hapus Setlist</button>
+          </div>
+        </div>
+        <div class="setlist-songs-picker-section">
+          <div class="picker-header">
+            <strong>Pilih Lagu dari Library untuk Setlist Ini:</strong>
+            <span id="setlist-picker-stat" class="detected-stat">0 dipilih</span>
+          </div>
+          <div id="setlist-songs-checkboxes" class="setlist-songs-checkboxes">
+            <!-- Checkboxes of songs generated dynamically -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-cancel-setlist-modal" class="btn-subtle">Batal</button>
+        <button id="btn-save-setlist-modal" class="btn-primary">Simpan Setlist</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Stage Metronome Bar (When Active) -->
+  <div id="stage-metronome-bar" class="stage-metronome-bar d-none">
+    <div class="metro-left">
+      <div id="metro-beat-dots" class="metro-beat-dots">
+        <span class="dot active"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+      <div class="metro-bpm-info">
+        <span id="metro-bpm-num" class="bpm-num">120</span>
+        <span class="bpm-label">BPM</span>
+      </div>
+    </div>
+    <div class="metro-center">
+      <button id="btn-metro-minus" class="metro-ctrl-btn">-5</button>
+      <input type="range" id="metro-slider" min="40" max="220" value="120" class="metro-range">
+      <button id="btn-metro-plus" class="metro-ctrl-btn">+5</button>
+      <button id="btn-metro-tap" class="metro-tap-btn" title="Tap Tempo">TAP</button>
+    </div>
+    <div class="metro-right">
+      <button id="btn-metro-sound-toggle" class="metro-audio-toggle" title="Aktifkan Bunyi Beep Audio">
+        <svg viewBox="0 0 24 24" class="svg-mini"><path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+        <span id="metro-sound-label">Bisu</span>
+      </button>
+      <button id="btn-metro-close" class="metro-close-btn">&times;</button>
+    </div>
+  </div>
+
+  <!-- Global Toast Notification Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- Main JavaScript App -->
+  <script src="app.js"></script>
+</body>
+</html>
